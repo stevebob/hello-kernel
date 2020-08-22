@@ -1,7 +1,12 @@
 mmio        = 0xfffffffff8000000;
 fb          = 0xfffffffffc000000;
 kernel_base = 0xffffffffffe00000;
-user_base   = 0x0000000008000000;
+user_base   = 0x0000000080000000;
+
+PHDRS {
+  boot PT_LOAD;
+  user PT_LOAD;
+}
 
 SECTIONS {
     . = kernel_base;
@@ -15,33 +20,39 @@ SECTIONS {
     .text : {
         *(.text)
         *(.rodata)
-    }
+    } :boot
     .data : ALIGN(0x1000) {
         *(.data)
-    }
+    } :boot
     .bss (NOLOAD) : ALIGN(0x1000) {
         *(.bss)
-    }
-    /DISCARD/ : {
-        *(.eh_frame)
-        *(.comment)
-    }
+    } :boot
 
     . = user_base;
+    . = ALIGN(0x1000);
+    user_text_start = .;
     .user.text : {
         *(.user.text)
         *(.user.rodata)
-    }
-    .user.data : ALIGN(0x1000) {
+    } :user
+    . = ALIGN(0x1000);
+    user_text_end = .;
+    user_data_start = .;
+    .user.data : {
         *(.user.data)
-    }
-    .user.bss (NOLOAD) : ALIGN(0x1000) {
+    } :user
+    . = ALIGN(0x1000);
+    user_data_end = .;
+    user_bss_start = .;
+    .user.bss (NOLOAD) : {
         *(.user.bss)
-    }
+    } :user
+    . = ALIGN(0x1000);
+    user_bss_end = .;
+
     /DISCARD/ : {
-        *(.user.debug_*)
-        *(.user.note.*)
-        *(.user.comment)
-        *(.user.eh_frame)
+        *(.eh_frame)
+        *(.comment)
+        *(.note.*)
     }
 }
