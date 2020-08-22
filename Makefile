@@ -1,4 +1,4 @@
-CC ?= clang
+CC ?= gcc
 NASM ?= nasm
 LD ?= ld
 STRIP ?= strip
@@ -24,29 +24,26 @@ run-graphical: kernel.img
 run-debug: kernel.img
 	$(QEMU) -drive file=$^,format=raw -serial stdio -display none -s -S
 
-kernel.elf: kernel.c putc.asm link.ld user.elf
+kernel.elf: kernel.c putc.asm link.ld user.o
 	$(CC) $(CFLAGS) -mno-red-zone -c kernel.c -o kernel.o
 	$(NASM) -f elf64 putc.asm -o putc.o
-	$(LD)  -nostdlib -nostartfiles -T link.ld kernel.o putc.o user.elf -o $@
+	$(NASM) -f elf64 user_trampoline.asm -o user_trampoline.o
+	$(LD)  -nostdlib --script link.ld kernel.o putc.o user_trampoline.o user.o -o $@
 	$(STRIP) -s \
 		--keep-symbol=mmio \
 		--keep-symbol=fb \
 		--keep-symbol=bootboot \
 		--keep-symbol=environment \
-		--keep-symbol=user_text_start \
-		--keep-symbol=user_text_end \
-		--keep-symbol=user_data_start \
-		--keep-symbol=user_data_end \
-		--keep-symbol=user_bss_start \
-		--keep-symbol=user_bss_end \
-		--keep-symbol=__user__start \
+		--keep-symbol=user_base \
+		--keep-symbol=user_stack_bottom \
+		--keep-symbol=user_stack_top \
 		$@
 
-user.elf: user.c
-	$(CC) $(CFLAGS) -static $^ -o $@
+user.o: user.c
+	$(CC) $(CFLAGS) -static -c $^ -o $@
 	$(OBJCOPY) \
-		--prefix-symbols=__user_ \
 		--strip-unneeded \
+		--prefix-symbols=__user_ \
 		--keep-symbol=__user__start \
 		--rename-section .text=.user.text \
 		--rename-section .rodata=.user.rodata \

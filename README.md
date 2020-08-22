@@ -14,7 +14,7 @@ make run
 ### FreeBSD
 
 ```
-LD=/usr/local/bin/ld gmake run
+CC=clang LD=ld.lld gmake run
 ```
 
 ## Debugging

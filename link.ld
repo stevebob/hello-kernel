@@ -1,7 +1,9 @@
 mmio        = 0xfffffffff8000000;
 fb          = 0xfffffffffc000000;
 kernel_base = 0xffffffffffe00000;
-user_base   = 0x0000000080000000;
+user_base   = 0x0000000040000000;
+
+user_stack_size = 0x1000;
 
 PHDRS {
   boot PT_LOAD;
@@ -29,26 +31,24 @@ SECTIONS {
     } :boot
 
     . = user_base;
-    . = ALIGN(0x1000);
-    user_text_start = .;
-    .user.text : {
+    .user.trampoline : ALIGN(0x1000) {
+        *(.user.trampoline)
+    } :user
+    .user.text : ALIGN(0x1000) {
         *(.user.text)
         *(.user.rodata)
     } :user
-    . = ALIGN(0x1000);
-    user_text_end = .;
-    user_data_start = .;
-    .user.data : {
+    .user.data : ALIGN(0x1000) {
         *(.user.data)
     } :user
-    . = ALIGN(0x1000);
-    user_data_end = .;
-    user_bss_start = .;
-    .user.bss (NOLOAD) : {
+    .user.bss (NOLOAD) : ALIGN(0x1000) {
         *(.user.bss)
     } :user
-    . = ALIGN(0x1000);
-    user_bss_end = .;
+    .user.stack (NOLOAD) : ALIGN(0x1000) {
+        user_stack_bottom = .;
+        . += user_stack_size;
+        user_stack_top = .;
+    } :user
 
     /DISCARD/ : {
         *(.eh_frame)
